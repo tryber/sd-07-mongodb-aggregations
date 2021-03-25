@@ -1,0 +1,438 @@
+// DESAFIO 5
+db.movies.findOne()
+db.movies.aggregate([
+  {
+    $match: {
+      countries: "USA",
+      "tomatoes.viewer.rating": {
+        $gte: 3
+      },
+      cast: {
+        $exists: true,
+        $in: [
+          "Sandra Bullock",
+          "William K.L. Dickson",
+          "Tom Hanks",
+          "Julia Roberts",
+          "Kevin Spacey",
+          "George Clooney"
+        ],
+      },
+    },
+  },
+  {
+    $addFields: {
+      num_favs: {
+        $size: {
+          $setIntersection: [
+            [
+              "Sandra Bullock",
+              "William K.L. Dickson",
+              "Tom Hanks",
+              "Julia Roberts",
+              "Kevin Spacey",
+              "George Clooney"
+            ],
+            "$cast"
+          ],
+        },
+      },
+    },
+  },
+  {
+    $sort: { num_favs: -1, "tomatoes.viewer.rating": -1, title: -1 },
+  },
+  {
+    "$skip": 24
+  },
+  {
+    $project: {
+      _id: 0,
+      title: 1,
+    },
+  },
+  {
+    $limit: 1,
+  }
+]);
+// DESAFIO 6
+db.movies.aggregate([
+  {
+    "$match": {
+      year: {
+        $gte: 1991,
+        $lte: 1991,
+      },
+      title: "The Silence of the Lambs"
+    }
+  }
+]).pretty()
+db.movies.aggregate([
+  {
+    "$match": {
+      $and: [
+        { awards: { $regex: /^Won/i}},
+        { awards: { $regex: /Oscar/i}}
+      ]
+    }
+  },
+  {
+    "$group": {
+      _id: null,
+      "maior_rating": { $max: "$imdb.rating"},
+      "menor_rating": { $min: "$imdb.rating"},
+      "media_rating": { $avg: "$imdb.rating"},
+      "desvio_padrao": { $stdDevSamp: "$imdb.rating"}
+    }
+  },
+  {
+    "$project": {
+      _id: 0,
+       "maior_rating": 1,
+       "menor_rating": 1,
+       "media_rating": { $round: ["$media_rating", 1]},
+       "desvio_padrao": { $round: ["$desvio_padrao", 1]}
+    }
+  }
+])
+
+db.movies.aggregate([
+  {
+    "$match": {
+      $and: [
+        { awards: { $regex: /^Won/i}},
+        { awards: { $regex: /Oscar/i}}
+      ]
+    }
+  },
+  {
+    "$project": {
+      _id: 0,
+      awards: 1,
+      "imdb.rating": 1
+    }
+  },
+  {
+    "$sort": {"imdb.rating": -1}
+  }
+
+])
+
+
+// DESAFIO 7
+db.movies.aggregate([
+  {
+    "$match": {
+      languages: "English"
+    }
+  },
+  {
+    "$unwind": "$cast"
+  },
+  {
+    "$group": {
+      _id: "$cast",
+      numeroFilmes: {
+        $sum: 1
+      },
+      mediaIMDB: {
+        $avg: "$imdb.rating"
+      }
+    }
+  },
+  {
+    "$sort": {
+      numeroFilmes: -1,
+      _id: -1
+    }
+  },
+  {
+    "$project": {
+      mediaIMDB: { $round: ["$mediaIMDB", 1]},
+      numeroFilmes: 1
+    }
+  }
+])
+
+// DESAFIO 8
+db.air_alliances.aggregate([
+  {
+    $unwind: "$airlines"
+  },
+  {
+    "$lookup": {
+      from: "air_routes",
+      let: { local_airline: "$airlines", local_name: "$name"},
+      pipeline: [
+        {
+          "$match": {
+           $or: [
+             { "airplane": "747" },
+             {"airplane": "380"}
+           ]
+        }
+        },
+        {
+          $group: {
+            _id: { empresa: "$$local_name",
+                   rota: "$airline.name"},
+            total: { $sum: 1 }
+          }
+        }
+      ],
+      as: "rotas"
+    }
+  },
+  {
+    "$project": {
+      _id: 0,
+      "_id": "$rotas._id",
+      "totalRotas": "$rotas.total",
+    }
+  }
+])
+db.air_routes.aggregate([
+{
+    "$match": {
+      $or: [
+        { "airplane": "747" },
+        {"airplane": "380"}
+      ]
+    }
+  },
+  {
+    "$group": {
+      _id: "$airline.name",
+      total: {
+        $sum: 1
+      }
+    }
+  },
+  {
+    "$lookup": {
+      from: "air_alliances",
+      let: { local_air: "$airline.name", local_airplane: "$airplane" },
+      pipeline: [
+        {
+          $unwind: "$airlines"
+        },
+        {
+          $match: {
+            $expr: {
+              $eq: ["$$local_air", "$airlines"]
+            }
+          }
+        }
+      ],
+      as: "rotas"
+    }
+  }
+]).pretty()
+db.air_alliances.aggregate([
+  {
+
+  },
+  {
+    "$project": {
+      _id: 0,
+    }
+  }
+])
+db.air_routes.aggregate([
+  {
+    "$match": {
+      $or: [
+        { "airplane": "747" },
+        {"airplane": "380"}
+      ]
+    }
+  },
+  {
+    "$group": {
+      _id: "$airline.name",
+      total: {
+        $sum: 1
+      }
+    }
+  }
+]).pretty()
+db.air_alliances.find()
+db.air_routes.find()
+db.air_airlines.findOne()
+
+// DESAFIO 9
+db.trips.findOne()
+db.trips.aggregate([
+  {
+    "$match": {
+      birthYear: {
+        $exists: true,
+        $ne: ""
+      }
+    }
+  },
+  {
+    $group: {
+      _id: null,
+      maiorAnoNascimento: { $max: { $toInt: "$birthYear"}},
+      menorAnoNascimento: { $min: { $toInt: "$birthYear"}}
+    }
+  },
+  {
+    "$project": {
+      _id: 0,
+    }
+  }
+])
+
+// DESAFIO 10
+db.trips.aggregate([
+  {
+    $group: {
+      _id: "$usertype",
+      duracaoMedia: {
+        $avg: {
+        $divide: [
+          {$subtract: ["$stopTime", "$startTime"]},
+          3600000
+          ]}}
+    }
+  },
+  {
+    "$project": {
+      _id: 0,
+      "tipo": "$_id",
+      duracaoMedia: {
+        $round: ["$duracaoMedia", 2]
+      }
+    }
+  },
+  {
+    $sort: {duracaoMedia: 1}
+  }
+])
+// DESAFIO 11
+db.trips.findOne()
+// { $dayOfWeek: ISODate("1998-11-07T00:00:00Z") }
+db.trips.aggregate([
+  {
+    $addFields: {
+      diaDaSemana: {
+        $dayOfWeek: "$startTime",
+      },
+    },
+  },
+  {
+    $group: {
+      _id: "$diaDaSemana",
+      total: {
+        $sum: 1,
+      },
+    },
+  },
+  {
+    $project: {
+      _id: 0,
+      diaDaSemana: "$_id",
+      total: "$total",
+    },
+  },
+  {
+    $sort: { total: -1 },
+  },
+  {
+    $limit: 1,
+  }
+]);
+// DESAFIO 12
+db.trips.aggregate([
+  {
+    $addFields: {
+      diaDaSemana: {
+        $dayOfWeek: "$startTime",
+      },
+    },
+  },
+  {
+    "$match": {
+      diaDaSemana: { $eq: 5 }
+    }
+  },
+  {
+    "$group": {
+      _id: "$startStationName",
+      totalViagens: { $sum: 1 }
+    }
+  },
+  {
+    "$sort": { totalViagens: -1 }
+  },
+  {
+    "$project": {
+      _id: 0,
+      nomeEstacao: "$_id",
+      total: "$totalViagens"
+    }
+  }, 
+  {
+    "$limit": 1
+  }
+])
+// DESAFIO 13
+db.trips.aggregate([
+  {
+    "$match": {
+      "startTime": {
+        $gte: ISODate("2016-03-10")
+      }
+    }
+  },
+  {
+    "$group": {
+      _id: null,
+      duracaoMedia: {
+        $avg: {
+          $divide: [{ $subtract: ["$stopTime", "$startTime"] }, 60000],
+        },
+      },
+    }
+  },
+    {
+    $project: {
+      _id: 0,
+      duracaoMediaEmMinutos: {
+        $ceil: "$duracaoMedia",
+      },
+    },
+  }
+])
+
+// DESAFIO 14
+db.trips.find()
+db.trips.aggregate([
+  {
+    "$group": {
+      _id: "$bikeid",
+      duracaoMedia: {
+        $avg: {
+          $divide: [{ $subtract: ["$stopTime", "$startTime"] }, 60000],
+        },
+      },
+    }
+  },
+  {
+    "$sort": { duracaoMedia: -1 }
+  },
+  {
+    "$limit": 5
+  },
+  {
+    "$project": {
+      _id: 0,
+      "bikeId": "$_id",
+      "duracaoMedia": {
+        $ceil: "$duracaoMedia"
+      }
+    }
+  }
+])

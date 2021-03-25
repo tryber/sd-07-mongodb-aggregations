@@ -1,0 +1,91 @@
+// DESAFIO 8
+db.air_alliances.aggregate([
+  {
+    $unwind: "$airlines"
+  },
+  {
+    "$lookup": {
+      from: "air_routes",
+      let: { empresa: "$name", local_airlines: "$airlines"},
+      pipeline: [
+        {
+          $match: {
+            "airplane": { $in: [ "747", "380"]}
+          }
+        },
+        {
+          $match: {
+            $expr: {
+              $eq: [ "$$local_airlines", "$airline.name"]
+            }
+          }
+        }/* ,
+        {
+          $group: {
+            _id:"$$empresa",
+            total: {
+              $sum: 1
+            }
+            
+          }
+        },
+        {
+          $project: {
+            _id: 0,
+            total: 1
+          }
+        } */
+      ],
+      as: "routes"
+    }
+  },
+  {
+    $sort: {"routes.total": -1}
+  }/* ,
+  {
+    "$project": {
+      _id: 0,
+      "_id": "$name",
+      "totalRotas": "$routes.total"
+    }
+  },
+  {
+    "$limit": 1
+  } */
+]).pretty()
+db.air_alliances.find()
+db.air_routes.find()
+db.air_airlines.findOne()
+
+db.air_alliances.aggregate([
+  {
+    $unwind: "$airlines"
+  },
+  {
+    "$lookup": {
+      from: "air_routes",
+      localField: "airlines",
+      foreignField: "airline.name",
+      as: "rotas"
+    }
+  },
+  {
+    $unwind: "$rotas"
+  },
+  {
+    $match: {
+      "rotas.airplane": { $in: [ "747", "380"]}
+    }
+  },
+  {
+    $group: {
+      _id: "$name",
+      totalRotas: {
+        $sum: 1
+      }
+    }
+  },
+  {
+    $sort: { totalRotas: -1 }
+  }
+]).pretty()
