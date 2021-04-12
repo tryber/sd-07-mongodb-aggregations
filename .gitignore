@@ -9,3 +9,6 @@ assets/*/*.bson
 
 assets/*/dump.tar.gz
 node_modules
+
+# Script Teste Local Unitário
+scripts/teste.sh
