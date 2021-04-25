@@ -79,7 +79,7 @@ Então vamos lá aplicar seu conhecimento nesses cenários muito legais! 😉
     * `cd sd-07-mongodb-aggregations`
 
 2. Crie uma branch a partir da branch `master`
-  * Verifique que você está na branch `master`
+  * Verifique que você está na branch `master`DBNAME=aggregations ./scripts/resetdb.sh assets
     * Exemplo: `git branch`
   * Se não estiver, mude para a branch `master`
     * Exemplo: `git checkout master`
