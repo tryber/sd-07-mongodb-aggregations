@@ -27,10 +27,10 @@ print_results() {
   printf "\n======================= RESULTS =======================\n"
 }
 
+
 # Print tests evaluation
 for entry in "$TRYBE_DIR/expected-results"/*
 do
-  scripts/resetdb.sh "$DB_RESTORE_DIR"
   # Get challenge name
   chName=$(echo "$(basename $entry)" | sed -e "s/.js//g")
   # Build path to results dir
@@ -56,5 +56,3 @@ do
   printf "\n%s: \e[1;42mpassed \e[0m" "$chName" >> "$RESULTS_DIR/evaluation.out"
   print_results
 done
-
-scripts/resetdb.sh "$DB_RESTORE_DIR"
